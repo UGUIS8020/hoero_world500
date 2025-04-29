@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="all">
+    <meta name="keywords" content="歯科技工所,埼玉県,越谷市,新越谷,南越谷,IOSデータ,自家歯牙移植,3Dプリント,デジタルデンティストリー,バイオブロック,矯正装置,口腔内スキャナー">
+    <meta name="author" content="渋谷歯科技工所">
+
+    <!-- Open Graph Tags -->
+    <meta property="og:url" content="https://shibuya8020.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="渋谷歯科技工所 | バイオブロック矯正装置 | SHIBUYA Dental Laboratory">
+
+    {% block meta_description %}
+    <meta name="description" content="埼玉県越谷市の渋谷歯科技工所。最新のデジタル技術を活用した歯科技工サービスを提供。biobloc バイオブロック 矯正装置各種をIOS(口腔内スキャナー)で承ります。自家歯牙移植用3Dレプリカ、CAD/CAM修復物など。【電話】048-961-8151">
+    <meta property="og:description" content="埼玉県越谷市の渋谷歯科技工所。biobloc バイオブロック 矯正装置各種をIOS(口腔内スキャナー)で承ります。最新のデジタル技術を活用した歯科技工サービスを提供。【電話】048-961-8151">
+    {% endblock %}
+    
+    <meta property="og:image" content="https://shibuya8020.com/images/logo02.jpg">
+    <meta property="og:site_name" content="渋谷歯科技工所">
+    
+      <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='main/top/favicon.ico') }}?v=2">
+    <link rel="canonical" href="https://shibuya8020.com/">
+
+      <!-- Title -->
+    <title>{% block title %}渋谷歯科技工所 | SHIBUYA Dental Laboratory{% endblock %}</title>
+     
+    {% block head_extras %}{% endblock %}
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7MRMSYX9Q5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-7MRMSYX9Q5');
+
+      
+    </script>
+
+    <script>
+        // CSRFトークンをJavaScriptで使用できるようにする
+        const csrf_token = "{{ csrf_token() }}";
+    </script>
+ 
+    <!-- CSS（Bootstrap） -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdn.ckeditor.com/4.18.0/standard/ckeditor.js"></script>
+    
+    <!-- 新しいスタイルシートを追加 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand fst-italic" href="{{ url_for('main.index') }}">Home.</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.info' %}active{% endif %}" href="{{ url_for('main.info') }}">会社情報</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.inquiry' %}active{% endif %}" href="{{ url_for('main.inquiry') }}">お問い合わせ</a>
+              </li>
+            </ul>
+            <br>
+            <ul class="navbar-nav ms-auto">
+
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.blog_maintenance' %}active{% endif %}" href="{{ url_for('main.colors') }}">色分析</a>
+              </li>
+               <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'stl_board' %}active{% endif %}" href="{{ url_for('stl_board.index') }}">STL掲示板</a>
+              </li>
+              
+              {% if current_user.is_authenticated and current_user.is_administrator %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.s3_browser' %}active{% endif %}" href="{{ url_for('main.s3_browser') }}">s3_browser</a>
+              </li> 
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.meziro' %}active{% endif %}" href="{{ url_for('main.meziro') }}">MEZIRO</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.ugu_box' %}active{% endif %}" href="{{ url_for('main.ugu_box') }}">UGU_BOX</a>
+              </li>                                       
+              {% endif %}
+
+              {% if current_user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.blog_maintenance' %}active{% endif %}" href="{{ url_for('main.blog_maintenance') }}">ブログ</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.category_maintenance' %}active{% endif %}" href="{{ url_for('main.category_maintenance') }}">カテゴリ</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.inquiry_maintenance' %}active{% endif %}" href="{{ url_for('main.inquiry_maintenance') }}">お問い合わせ</a>
+              </li>
+              
+
+               {% if current_user.is_administrator %}
+                  <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'users.user_maintenance' %}active{% endif %}" href="{{url_for('users.user_maintenance')}}">ユーザー</a>
+                  </li>
+                {% endif %}
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('users.logout') }}">ログアウト</a>
+                </li>                   
+
+                <a href="{{ url_for('users.account', user_id=current_user.id) }}" class="navbar-text ms-3 {% if current_user.is_administrator %}admin-name{% else %}user-name{% endif %}">
+                  {{ current_user.display_name | truncate(10) }}
+                </a>                
+
+                {% else %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('users.login') }}">ログイン</a>
+                </li>             
+
+                {% endif %}        
+
+            </ul>
+          </div>
+        </div>
+      </nav>    
+
+      {% from "common/_formhelpers.html" import render_field %}
+
+      <div class="container" style="padding-top: 4rem; padding-bottom: 4rem;">
+        {% for message in get_flashed_messages() %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+
+        {% block content %}
+
+        {% endblock %}
+      </div>
+
+      <footer id="footer" class="footer text-center pt-2 bg-dark fixed-bottom">
+        <div class="container">
+          <div class="row">
+            <div class="col text-white">
+              <p>Copyright @ 2024 UGUIS.</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+</body>
+</html>

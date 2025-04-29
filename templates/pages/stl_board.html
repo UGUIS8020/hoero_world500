@@ -1,0 +1,323 @@
+{% extends "common/base.html" %}
+
+{% block title %}STL掲示板{% endblock %}
+
+{% block head %}
+<!-- Three.js と Loader の読み込み (順序が重要) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+
+<style>
+  .post-card {
+    transition: transform 0.2s ease;
+  }
+  .post-card:hover {
+    transform: translateY(-5px);
+  }
+  .selected-post {
+    border: 2px solid #1976d2;
+    box-shadow: 0 0 10px rgba(25, 118, 210, 0.3);
+  }
+</style>
+
+<!-- model-viewer 読み込み -->
+<script type="module" defer src="https://unpkg.com/@google/model-viewer@v3.3.0/dist/model-viewer.min.js"></script>
+<script nomodule defer src="https://unpkg.com/@google/model-viewer@v3.3.0/dist/model-viewer-legacy.js"></script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">  
+
+  <!-- 新規投稿フォーム -->
+  {% if current_user.is_authenticated %}
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">新規投稿</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.title.label(class="form-label") }}
+          {{ form.title(class="form-control") }}
+        </div>
+        <div class="mb-3">
+          {{ form.content.label(class="form-label") }}
+          {{ form.content(class="form-control", rows=3) }}
+        </div>
+        <div class="mb-3">
+          {{ form.stl_file.label(class="form-label") }}
+          {{ form.stl_file(class="form-control") }}
+          <div class="form-text">STLファイルをアップロードしてください（3MB以下推奨）</div>
+        </div>
+        <div class="d-grid">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info text-center mb-4">
+    投稿するには<a href="{{ url_for('users.login') }}">ログイン</a>してください
+  </div>
+  {% endif %}
+
+
+  <model-viewer 
+  src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+  alt="3Dモデル" 
+  auto-rotate 
+  camera-controls
+  background-color="#f8f8f8"
+  style="width: 100%; height: 100%;">
+</model-viewer>
+
+  <!-- 投稿一覧 -->
+  <h4 class="mb-3">投稿一覧</h4>
+  {% for post in posts.items %}
+<div class="card post-card mb-3 {% if selected_post_id == post.id %}selected-post{% endif %}">
+  <div class="card-body">
+    <h5 class="card-title">{{ post.title }}</h5>
+    <h6 class="card-subtitle mb-2 text-muted">{{ post.author.display_name }} - {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+
+    <p>デバッグ: {{ post.stl_file_path }}</p>
+    <p>デバッグURL: https://shibuya8020.s3.amazonaws.com/{{ post.stl_file_path }}</p>
+
+    <!-- 正しい位置に配置したmodel-viewer -->
+    {% if post.stl_file_path and post.s3_presigned_url %}
+
+<p>チェック: {{ post.s3_presigned_url or 'URLなし' }}</p>
+    
+     <div style="width: 100%; height: 300px; background: #f8f8f8; border: 1px solid #ccc; border-radius: 8px;">
+      <model-viewer
+        id="model-viewer-{{ post.id }}"
+        src="{{ post.s3_presigned_url }}"
+        alt="3Dモデル"
+        auto-rotate
+        camera-controls
+        style="width: 100%; height: 100%;">
+      </model-viewer>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const viewer = document.getElementById('model-viewer-{{ post.id }}');
+        if (viewer) {
+          console.log('URL: {{ post.s3_presigned_url }}');
+          viewer.addEventListener('error', function(event) {
+            console.error('モデル読み込みエラー ({{ post.id }}):', event);
+          });
+        }
+      });
+    </script>
+    {% endif %}
+
+    <p class="card-text">
+      {% if post.content %}
+        {{ post.content|truncate(50) }}
+      {% else %}
+        <em>本文なし</em>
+      {% endif %}
+    </p>
+
+    <a href="{{ url_for('stl_board.index', post_id=post.id, page=posts.page) }}" class="btn btn-sm btn-primary">表示</a>
+  </div>
+</div>
+{% endfor %}
+
+
+
+  <!-- ページネーション -->
+  {% if posts.pages > 1 %}
+  <nav class="mt-3">
+    <ul class="pagination justify-content-center">
+      {% if posts.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('stl_board.index', page=posts.prev_num) }}">前へ</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">前へ</span></li>
+      {% endif %}
+      {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+      {% if page_num %}
+        {% if page_num == posts.page %}
+        <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+        {% else %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('stl_board.index', page=page_num) }}">{{ page_num }}</a></li>
+        {% endif %}
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      {% endfor %}
+      {% if posts.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('stl_board.index', page=posts.next_num) }}">次へ</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">次へ</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  <!-- 選択された投稿詳細 -->
+  {% if selected_post %}
+  <div class="card mt-5">
+    <div class="card-header">
+      <h4 class="mb-0">{{ selected_post.title }}</h4>
+    </div>
+    <div class="card-body">
+      <p class="mb-3">{{ selected_post.content or "本文なし" }}</p>
+      <div class="d-flex mb-3">
+        <!-- いいねボタン -->
+        <form method="POST" action="{{ url_for('stl_board.like_post', post_id=selected_post.id) }}" class="me-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger">
+            ❤️ いいね
+            <span class="badge bg-secondary">{{ selected_post.likes.count() }}</span>
+          </button>
+        </form>
+
+        {% if selected_post.stl_file_path %}
+        <a href="{{ selected_post.s3_presigned_url }}" class="btn btn-sm btn-success" download="{{ selected_post.stl_filename }}">
+        STLファイルダウンロード
+        </a>
+        {% endif %}
+      </div>
+
+      {% if selected_post.stl_file_path %}
+      <!-- STLビューワー -->
+      <div id="stl-viewer" style="width: 100%; height: 500px; background-color: #f0f0f0;"></div>
+      {% endif %}
+
+      <!-- コメント投稿フォーム -->
+      <div class="mt-4">
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('stl_board.add_comment', post_id=selected_post.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="parent_id" id="parent_comment_id" value="">
+          <div class="mb-3">
+            <label for="comment_content" class="form-label">コメントを追加</label>
+            <textarea id="comment_content" name="content" class="form-control" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">コメント投稿</button>
+        </form>
+        {% else %}
+        <div class="alert alert-info text-center">
+          コメントするには<a href="{{ url_for('users.login') }}">ログイン</a>してください
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- コメント一覧 -->
+      <div class="mt-4">
+        <h5>コメント一覧</h5>
+        {% for comment in comments %}
+          {% if comment.post_id == selected_post.id and not comment.parent_comment_id %}
+          <div class="card mt-2">
+            <div class="card-body">
+              <h6 class="text-muted">{{ comment.author.display_name }} - {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+              <p>{{ comment.content }}</p>
+            </div>
+          </div>
+
+          <!-- 返信コメント -->
+          {% for reply in comments %}
+            {% if reply.parent_comment_id == comment.id %}
+            <div class="card mt-2 ms-4">
+              <div class="card-body">
+                <h6 class="text-muted">{{ reply.author.display_name }} - {{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+                <p>{{ reply.content }}</p>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          {% endif %}
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// デバッグ用コード
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM読み込み完了');
+  
+  // model-viewerのデバッグ
+  const modelViewers = document.querySelectorAll('model-viewer');
+  console.log(`model-viewer要素数: ${modelViewers.length}`);
+  
+  modelViewers.forEach((viewer, index) => {
+    console.log(`model-viewer[${index}] src: ${viewer.getAttribute('src')}`);
+    
+    viewer.addEventListener('error', (event) => {
+      console.error(`model-viewer[${index}] エラー:`, event.detail);
+    });
+    
+    viewer.addEventListener('load', () => {
+      console.log(`model-viewer[${index}] 読み込み成功`);
+    });
+  });
+});
+</script>
+
+{% if selected_post and selected_post.stl_file_path %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('stl-viewer');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0);
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+  camera.position.z = 3;
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  container.appendChild(renderer.domElement);
+
+  const ambientLight = new THREE.AmbientLight(0x404040);
+  scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(1, 1, 1);
+  scene.add(directionalLight);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+
+  const loader = new THREE.GLTFLoader();
+  loader.load('{{ selected_post.s3_presigned_url }}', function (gltf) {
+      const model = gltf.scene;
+      model.scale.set(1, 1, 1); // 必要に応じてサイズ調整
+      scene.add(model);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+  }, undefined, function (error) {
+      console.error(error);
+  });
+
+  window.addEventListener('resize', function() {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+});
+</script>
+
+{% endif %}
+{% endblock %}

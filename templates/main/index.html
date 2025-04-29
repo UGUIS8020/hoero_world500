@@ -1,0 +1,470 @@
+{% extends "common/base.html" %}
+{% block content %}     
+
+    <style>
+    h1 {
+        text-align:center; 
+        color: #222222;
+        margin: 25px 0px 0px 0px;
+        padding: 0px;
+        }
+
+        h2 {
+        /* background-color:green; */
+        text-align:center; 
+        color: #222222;
+        margin: 0px 0px 0px 0px;
+        padding: 5px 0px 0px 0px;
+        }
+
+        h3 {
+        /* background-color:red; */
+        text-align:center; 
+        color: #222222;
+        margin: 0px 0px 0px 0px;
+        padding: 5px 0px 0px 0px;
+        /* margin: 5px 0px 0px 0px; */
+        /* padding: 5px 0px 0px 0px; */
+        }
+
+        h4 {
+        text-align:center; 
+        color: #333333;
+        font-weight: normal;
+        font-size: 18px;
+        margin: 5px;
+        padding: 5px;
+        }
+    .dental-header {
+        display: flex;
+        background-color: rgb(243, 244, 245);
+        align-items: center;
+        margin: 0 auto;
+        padding: 20px;
+        width: 100%;
+        
+        color: #7c1820;
+        justify-content: center;
+        }
+
+    .logo img {
+        max-width: 100%;
+        height: auto;
+        margin-right: 20px; /* 画像と文字の間隔 */
+        }
+
+    .text-content {
+        display: flex;
+        flex-direction: column;
+        }
+
+    .japanese-text {
+        font-weight: normal;
+        font-size: 50px;
+        font-family: "Shin Go", "Shin-Go", 
+                    "Kozuka Gothic Pro", "Kozuka Gothic Pr6N", "KozGoPro-Medium", 
+                    "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", 
+                    "Meiryo", "メイリオ", 
+                    "MS PGothic", "ＭＳ Ｐゴシック", 
+                    sans-serif;
+        }
+
+    section .english-text {
+        font-size: 24px; /* 英語テキストのフォントサイズを変更 */
+        }
+
+    </style>    
+
+     <section class="dental-header">
+        <div class="logo">         
+          
+          <img src="{{ url_for('static', filename='main/top/logo02.jpg') }}" alt="ロゴ" class="img-fluid">
+        </div>
+        <div class="text-content">
+          <div class="japanese-text">TEST渋谷歯科技工所</div>
+          <div class="english-text">SHIBUYA Dental Laboratory</div>
+        </div>
+    </section>  
+
+    <div>
+        <title>データ送信</title>
+<style>
+    a:link { color: #8b0000; text-decoration:none }
+    a:visited { color: #b22222; text-decoration:none }
+    a:hover { color: #b22222; text-decoration:none }
+    a:active { color: #b22222; text-decoration:none }
+    .drop-zone {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        text-align: center;
+        margin: 20px auto;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        max-width: 800px;
+    }
+    .drop-zone.active {
+        border-color: #007bff;
+        background-color: #e8f4ff;
+    }
+    .file-list {
+        margin-top: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background-color: #f8f9fa;
+        margin-bottom: 5px;
+        border-radius: 4px;
+    }
+    .folder-item {
+        background-color: #e8f4ff;
+        font-weight: bold;
+    }
+    .file-path {
+        color: #666;
+        font-size: 0.8em;
+        display: block;
+        word-break: break-all;
+    }
+    .file-remove {
+        color: red;
+        cursor: pointer;
+        padding: 0 10px;
+    }
+    #status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .processing {
+        background-color: #e2e3e5;
+        color: #383d41;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 4px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% {
+            opacity: 0.6;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0.6;
+        }
+    }
+    .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .success {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .progress-container {
+        width: 100%;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .progress-bar {
+        height: 20px;
+        background-color: #4caf50;
+        border-radius: 4px;
+        width: 0%;
+        transition: width 0.3s;
+        text-align: center;
+        line-height: 20px;
+        color: white;
+    }
+    .button-group {
+        margin-top: 15px;
+    }
+    button {
+        padding: 8px 16px;
+        margin: 0 5px;
+        border: none;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0069d9;
+    }
+    button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .iframe-container {
+          background-color: #f4f4f4;
+          position: relative;
+          width: 100%;
+          height: 800px;  /* 固定の高さを設定 */          
+          margin:0 auto;
+          overflow: hidden;
+        }
+        .iframe-container iframe {
+          width: 100%;
+          height: 100%;   
+          margin: 0 auto;
+        }
+
+        .box1 {
+        border: solid 1px orange;
+        margin: 10px auto;   
+        padding: 10px;     
+        }
+        .box1 div {
+        text-align: center; /* 画像を囲むdiv内で中央揃え */
+        }
+
+</style>
+<style>
+  .file-summary {
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .folder-summary {
+    padding: 8px;
+    margin: 5px 0;
+    background-color: #f8f8f8;
+    border-left: 3px solid #ddd;
+  }
+</style>
+
+<h3>〒343-0845 埼玉県越谷市南越谷4-9-6 新越谷プラザビル203</h3>
+<h2><a href = "tel:0489618151">Tel 048-961-8151</a></h2>
+<h3>E-mail shibuya8020@gmail.com</h3>
+
+<div class="d-flex flex-column gap-3 mb-4 mt-3 mx-auto" style="max-width: 550px; width: 100%;">
+    <a href="https://line.me/ti/p/9KRzw2ndvX" target="_blank" rel="noopener noreferrer" class="btn" style="background-color: #00B900; color: white;"><b>LINEで連絡</b></a>
+    <!-- <img src="images/line.jpg" alt="LINEのQRコード" width="200" height="200" class="img-fluid" loading="lazy"> -->
+</div>
+
+
+<h2 style="text-align: center;">データ送信</h2>
+<div class="drop-zone" id="dropZone">
+    <p>
+        ここにファイル・フォルダをドラッグ＆ドロップするか、クリックして選択してください
+    </p>
+    <p style="font-size: 0.9em; color: #666">
+        最大ファイルサイズ: 2GB<br />
+        対応ファイル: すべて<br />        
+    </p>
+    <div class="button-group">
+        <input
+            type="file"
+            id="fileInput"
+            name="files[]"
+            multiple
+            style="display: none"
+        />
+        <input
+            type="file"
+            id="folderInput"
+            name="folders[]"
+            multiple
+            webkitdirectory
+            directory
+            style="display: none"
+        />
+        <button onclick="document.getElementById('fileInput').click()">
+            ファイルを選択
+        </button>
+        <button onclick="document.getElementById('folderInput').click()">
+            フォルダを選択
+        </button>
+        <button id="uploadButton" disabled>アップロード</button>
+        <button id="clearButton" disabled>クリア</button>
+    </div>
+    <div class="mt-3 mb-2">
+    <label for="userMessage" class="form-label">メッセージ</label>
+    <textarea id="userMessage" class="form-control" rows="4" placeholder="確認のため部位、指示、備考など入力してください。&#10;空欄ですと送信できません。&#10;メッセージはアップロードと同時に送信されます。"></textarea></textarea>
+    </div>
+</div>
+<div id="status"></div>
+<div id="progressContainer" class="progress-container" style="display: none">
+    <div id="progressBar" class="progress-bar">0%</div>
+</div>
+
+
+
+<div id="fileList" class="file-list"></div>
+
+    <div class="box box1">        
+        <a href="{{ url_for('pages.root_replica') }}" target="_self">
+            <h2>rootreplica</h2>
+            <h3>自家歯牙移植用3Dドナーレプリカ(歯根レプリカ)</h3>
+            <h3>自家歯牙移植用サージカルガイド</h3>          
+
+           <div>      
+          <img src="{{ url_for('static', filename='main/top/root_replica003.jpg') }}">
+          <img src="{{ url_for('static', filename='main/top/root_replica004.jpg') }}">
+          </div>
+          </a>
+    </div>
+
+    <h3>ChatBot:弊社,歯科に関する質問に応答するチャットボットです</h3>
+    <!-- 埋め込み用のセクション -->
+    <div class="iframe-container">
+        <iframe src="https://uguis-raiden.com/" allowfullscreen></iframe>
+    </div>
+
+    <div class="box box1">        
+        <a href="{{ url_for('pages.root_replica') }}" target="_self">
+            <h2>PFZ</h2>                    
+
+           <div>      
+          <img src="{{ url_for('static', filename='main/top/001.jpg') }}">          
+          </div>
+          </a>
+    </div>
+
+
+   
+
+    <!--ページ明細-->
+    <div class="container my-3">
+        <div class="row mb-2">
+            <!--コンテンツ-->
+            <div class="col-md-8">
+                <!--ブログ投稿-->
+                <section id="blog_post">
+                    <div class="row">
+                        {% for post in blog_posts.items %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    {% if post.featured_image %}
+                                    <div class="mb-3" style="text-align: center;">
+                                        <img src="{{ url_for('static', filename='featured_image/' + post.featured_image) }}" class="img-fluid card-img-top" style="width: 250px; height: 250px; object-fit: scale-down;">
+                                        
+                                    </div>
+
+
+                                    {% endif %}
+                                    <h3>
+                                        <a href="{{ url_for('main.blog_post', blog_post_id=post.id) }}" class="card-title text-decoration-none">
+                                            <span class="fst-italic">{{ post.title | truncate(14) }}</span>
+                                        </a>
+                                    </h3>
+                                    <p>{{ post.date.strftime('%Y-%m-%d') }} by: {{ post.author.username | truncate(10) }}</p>
+                                    <p class="card-text">{{ post.summary | truncate(40) }}</p>
+                                    <a href="{{ url_for('main.blog_post', blog_post_id=post.id) }}" class="btn btn-dark">続きを読む…</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+            <!--サイドバー-->
+            <div class="col-md-4">
+                <div class="position-sticky" style="top: 2rem;">
+                    <!--検索欄-->
+                    <div class="container-fluid mb-3">
+                        <form action="{{ url_for('main.search') }}" class="d-flex" method="POST">
+                            {{ form.hidden_tag() }}
+                            {{ render_field(form.searchtext, class="form-control me-2", placeholder="検索するテキストを入力") }}
+                            {{ form.submit(class="btn btn-outline-success") }}
+                        </form>
+                    </div>
+                    <!--会社情報-->
+                    <div class="p-4 mb-2 bg-light">
+                        <h4 class="fst-italic">サイト情報</h4>
+                        <p>当サイトは現在テスト運用中です。知り合いメンバー内で書き込みやページの挙動を確認し、改善点を見つけるための協力をお願いします。ご意見やフィードバックをお待ちしております。</p>
+                    </div>
+                    <!--最新記事-->
+                    <div class="p-4">
+                        <h4 class="fst-italic">RECENT POST <span class="ms-2 fs-6">最新記事</span></h4>
+                        <hr>
+                        <ol class="list-unstyled">
+                            {% for recent_post in recent_blog_posts %}
+                            <li>
+                                <a href="{{ url_for('main.blog_post', blog_post_id=recent_post.id) }}" class="text-decoration-none">
+                                    {% if recent_post.featured_image %}
+                                    <img src="{{ url_for('static', filename='featured_image/' + recent_post.featured_image) }}" class="img-fluid" width="90" height="50">
+                                    {% endif %}
+                                    <span class="ms-2">{{ recent_post.title | truncate(14) }}</span>
+                                </a>
+                            </li>
+                            <hr>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    <!--カテゴリ一覧-->
+                    <div class="p-4">
+                        <h4 class="fst-italic">CATEGORY <span class="ms-2 fs-6">カテゴリ一覧</span></h4>
+                        <hr>
+                        <ol class="list-unstyled">
+                            {% for blog_category in blog_categories %}
+                            <li>
+                                <a href="{{ url_for('main.category_posts', blog_category_id=blog_category.id) }}" class="text-decoration-none">
+                                    <span class="ms-2">{{ blog_category.category | truncate(20) }}</span>
+                                </a>
+                            </li>
+                            <hr>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <!--navbar-->
+            <nav class="my-2" aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                  <li {% if blog_posts.has_prev %}class="page-item"{% else %} class="page-item disabled"{% endif %}><a class="page-link" href="{% if blog_posts.has_prev %}{{ url_for('main.index', page=blog_posts.prev_num) }}{% else %}#{% endif %}">前へ</a></li>
+        
+            
+                  {% for page_num in blog_posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}  
+                    {% if page_num %}
+                        {% if blog_posts.page == page_num %}
+                            <li class="page-item disabled"><a class="page-link" href="#">{{ page_num }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&hellip;</a></li>
+                    {% endif %}
+                  {% endfor %}
+        
+                  <li {% if blog_posts.has_next %}class="page-item"{% else %} class="page-item disabled"{% endif %}><a class="page-link" href="{% if blog_posts.has_next %}{{ url_for('main.index', page=blog_posts.next_num) }}{% else %}#{% endif %}">次へ</a></li>
+                </ul>
+            </nav>
+                </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/meziro_upload.js') }}"></script>
+
+
+{% endblock %}
