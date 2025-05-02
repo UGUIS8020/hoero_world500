@@ -15,10 +15,11 @@ from urllib.parse import unquote
 import io
 import base64
 from extensions import mail
-from utils.common_utils import get_next_sequence_number, process_image, sanitize_filename, ZipHandler, setup_scheduled_cleanup, cleanup_temp_files
+from utils.common_utils import get_next_sequence_number, process_image, sanitize_filename, ZipHandler, cleanup_temp_files
 from utils.stl_reducer import reduce_stl_size
 import tempfile
 from werkzeug.utils import secure_filename
+import json
 
 JST = timezone(timedelta(hours=9))
 current_time = datetime.now(JST)
@@ -216,8 +217,7 @@ def ugu_box():
                     'filename': filename, 
                     'url': file_url,
                     'last_modified': obj['LastModified'].astimezone(JST).strftime('%Y-%m-%d %H:%M')   # 日時情報も追加
-                })
-        print("s3_files:", s3_files)
+                })        
 
     except Exception as e:
         flash(f"S3ファイル一覧取得中にエラー: {str(e)}", "error")
@@ -378,7 +378,7 @@ def meziro():
                     'last_modified': obj['LastModified'].astimezone(JST).strftime('%Y-%m-%d %H:%M'),
                     'key': key  # 削除時に使用するため保存
                 })
-        print("s3_files:", s3_files)
+        
 
     except Exception as e:
         flash(f"S3ファイル一覧取得中にエラー: {str(e)}", "error")
@@ -388,18 +388,44 @@ def meziro():
         s3_files=s3_files
     )
 
-@bp.route('/meziro_upload', methods=['POST'])
-def meziro_upload():    
-    # print("Form data received:", dict(request.form))
-    # print("Files received:", [f.filename for f in request.files.getlist('files[]')])
-    # print("Environment variables:", {
-    #     'BUCKET_NAME': os.getenv('BUCKET_NAME'),
-    #     'AWS_REGION': os.getenv('AWS_REGION')
-    # })
+@bp.route('/meziro_upload_index', methods=['GET'])
+def meziro_upload_index():
+    return render_template('main/meziro_upload_index.html')
 
-    message = request.form.get('message')
+@bp.route('/meziro_upload', methods=['POST'])
+def meziro_upload():   
+
+    business_name = request.form.get('businessName', '')
+    user_name = request.form.get('userName', '')
+    user_email = request.form.get('userEmail', '')
+    patient_name = request.form.get('PatientName', '')
+    appointment_date = request.form.get('appointmentDate', '')
+    appointment_hour = request.form.get('appointmentHour', '')
+    project_type = request.form.get('projectType', '')
+    crown_type = request.form.get('crown_type', '')
+    teeth_raw = request.form.get('teeth', '[]')
+    shade = request.form.get('shade', '')
+    try:
+        teeth = json.loads(teeth_raw)
+    except json.JSONDecodeError:
+        teeth = []
+    message = request.form.get('userMessage', '')
+
+     # 必須フィールドの検証
     if not message:
         return jsonify({'error': 'メッセージが入力されていません'}), 400
+    
+    if not business_name:
+        return jsonify({'error': '事業者名が入力されていません'}), 400
+        
+    if not user_name:
+        return jsonify({'error': '送信者名が入力されていません'}), 400
+        
+    if not user_email:
+        return jsonify({'error': 'メールアドレスが入力されていません'}), 400
+        
+    if not project_type:
+        return jsonify({'error': '製作物が選択されていません'}), 400
 
     if 'files[]' not in request.files:
         return jsonify({'error': 'ファイルが選択されていません'}), 400
@@ -411,10 +437,8 @@ def meziro_upload():
     uploaded_urls = []
     numbered_ids = []
     
-    # DynamoDBから次の受付番号を取得
-    session_id = get_next_sequence_number()
-    # 管理番号として6桁のゼロ埋め形式に
-    id_str = f"{session_id:05d}"  # 例: 000001, 000002, ...
+    session_id, warning_message = get_next_sequence_number()
+    id_str = f"{session_id:05d}"  # 管理番号として6桁のゼロ埋め形式に   
     
     try:
         result, temp_dir = zip_handler_instance.process_files(files)
@@ -439,15 +463,13 @@ def meziro_upload():
                         ExtraArgs={'ContentType': 'application/octet-stream'}
                     )
 
-                # 有効期限付きURLを生成
-                presigned_url = s3.generate_presigned_url(
-                    'get_object',
-                    Params={'Bucket': os.getenv('BUCKET_NAME'), 'Key': s3_key},
-                    ExpiresIn=604800
-                )
+                bucket_name = os.getenv("BUCKET_NAME")
+                region = os.getenv("AWS_REGION")
+                public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
 
-                uploaded_urls.append(presigned_url)
+                uploaded_urls.append(public_url)
                 numbered_ids.append(f"{id_str}_{index:03d}")
+
         else:  # 圧縮した場合（zipファイル）の処理
             zip_file_path = result
             print(f"Uploading zip file: {zip_file_path}")  # デバッグ用
@@ -465,29 +487,41 @@ def meziro_upload():
                     ExtraArgs={'ContentType': 'application/zip'}
                 )
 
-            # 有効期限付きURLを生成
-            presigned_url = s3.generate_presigned_url(
-                'get_object',
-                Params={'Bucket': os.getenv('BUCKET_NAME'), 'Key': s3_key},
-                ExpiresIn=604800
-            )
+            bucket_name = os.getenv("BUCKET_NAME")
+            region = os.getenv("AWS_REGION")
+            public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
 
-            uploaded_urls.append(presigned_url)
+            uploaded_urls.append(public_url)
             numbered_ids.append(id_str)
             
-            # 一時ファイルの削除
-            if os.path.exists(zip_file_path):
-                os.remove(zip_file_path)
+        # 一時ファイルの削除
+        if 'zip_file_path' in locals() and os.path.exists(zip_file_path):
+            os.remove(zip_file_path)
 
         # メール本文に署名付きURLを含める
         url_text = "\n".join(uploaded_urls)
         full_message = f"""ユーザーから以下のメッセージが届きました：
 
+【受付番号】No.{id_str}
+【事業者名】{business_name}
+【送信者名】{user_name}
+【メールアドレス】{user_email}
+【患者名】{patient_name}
+【セット希望日時】{appointment_date} {appointment_hour}時
+【製作物】{project_type}
+【クラウン種別】{crown_type}
+【対象部位】{", ".join(teeth)}
+【シェード】{shade}
+【メッセージ】
 {message}
 
-アップロードされたファイル（リンクは1週間有効です）：
+【アップロードされたファイルリンク】
 {url_text}
-"""
+        """
+
+        # DynamoDBエラーがあれば追加
+        if warning_message:
+            full_message += f"\n\n⚠️ システム警告：{warning_message}\n"
 
         msg = Message(
             subject=f"【仕事が来たよ】No.{id_str}",
@@ -536,33 +570,6 @@ def meziro_download(key):
         flash(f"ファイルのダウンロード中にエラーが発生しました: {str(e)}", "error")
         return redirect(url_for('main.meziro'))
 
-# ファイル削除用ルート
-# @bp.route('/meziro/delete', methods=['POST'])
-# def meziro_delete():
-#     try:
-#         selected_files = request.form.getlist('selected_files')
-        
-#         if not selected_files:
-#             flash("削除するファイルが選択されていません", "warning")
-#             return redirect(url_for('main.meziro'))
-        
-#         deleted_count = 0
-#         for key in selected_files:
-#             # URLデコード
-#             decoded_key = unquote(key)
-            
-#             # S3からファイル削除
-#             s3.delete_object(
-#                 Bucket=BUCKET_NAME,
-#                 Key=decoded_key
-#             )
-#             deleted_count += 1
-        
-#         flash(f"{deleted_count}件のファイルを削除しました", "success")
-#     except Exception as e:
-#         flash(f"削除中にエラーが発生しました: {str(e)}", "danger")
-    
-#     return redirect(url_for('main.meziro'))
 
 # ファイル削除用ルート
 @bp.route('/meziro/delete', methods=['POST'])

@@ -271,8 +271,18 @@
 </div>
 
 
-<h2 style="text-align: center;">データ送信</h2>
-<div class="drop-zone" id="dropZone">
+
+    <a class="nav-link {% if request.blueprint == 'stl_board' %}active{% endif %}" href="{{ url_for('main.meziro_upload_index') }}">
+        <h2 style="text-align: center;">データ送信はココをクリック</h2>
+    </a>      
+
+    <a href="{{ url_for('main.meziro_upload_index') }}" class="text-decoration-none">
+  <div class="alert alert-primary text-center shadow-sm" style="cursor: pointer; font-size: 1.5rem; font-weight: bold;">
+    📤 データ送信はこちらをクリックしてください！送信ページに移動します
+  </div>
+</a>
+
+<!-- <div class="drop-zone" id="dropZone">
     <p>
         ここにファイル・フォルダをドラッグ＆ドロップするか、クリックして選択してください
     </p>
@@ -318,7 +328,7 @@
 
 
 
-<div id="fileList" class="file-list"></div>
+<div id="fileList" class="file-list"></div> -->
 
     <div class="box box1">        
         <a href="{{ url_for('pages.root_replica') }}" target="_self">
@@ -463,8 +473,5 @@
             </nav>
                 </div>
     </div>
-
-    <script src="{{ url_for('static', filename='js/meziro_upload.js') }}"></script>
-
 
 {% endblock %}

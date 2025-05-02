@@ -29,19 +29,19 @@ counter_table = dynamodb.Table('Meziro-Counters')  # カウンター用のテー
 
 def get_next_sequence_number():
     try:
-        # アトミックカウンターを使用して番号を増加させる
         response = counter_table.update_item(
             Key={'counter_name': 'meziro_upload'},
             UpdateExpression='SET #val = if_not_exists(#val, :start) + :incr',
             ExpressionAttributeNames={'#val': 'counter_value'},
-            ExpressionAttributeValues={':incr': 1, ':start': 0},  # 0から開始
+            ExpressionAttributeValues={':incr': 1, ':start': 0},
             ReturnValues='UPDATED_NEW'
         )
-        return int(response['Attributes']['counter_value'])
+        return int(response['Attributes']['counter_value']), None  # ← 2つ返す
     except ClientError as e:
-        print(f"DynamoDBエラー: {e}")
-        # エラー時はタイムスタンプを使用
-        return int(time.time())
+        fallback_id = int(time.time())
+        warning_msg = f"[WARNING] DynamoDB失敗。代替IDとして {fallback_id} を使用します: {e}"
+        print(warning_msg)
+        return fallback_id, warning_msg  # ← 2つ返す
     
 class ZipHandler:
     def __init__(self, upload_folder='uploads', temp_zip_folder='temp_zips'):
@@ -292,58 +292,110 @@ def get_font(font_size=18):
 import os
 import time
 
-def cleanup_temp_files(app_root_path, days_old=7):
-    """
-    temp_downloadsとtemp_zipsディレクトリの古いファイルをクリーンアップする
+# def cleanup_temp_files(app_root_path, days_old=7):
+#     """
+#     temp_downloadsとtemp_zipsディレクトリの古いファイルをクリーンアップする
     
-    Parameters:
-    -----------
-    app_root_path : str
-        アプリケーションのルートパス
-    days_old : int, optional
-        この日数より古いファイルを削除する (デフォルト: 7日)
+#     Parameters:
+#     -----------
+#     app_root_path : str
+#         アプリケーションのルートパス
+#     days_old : int, optional
+#         この日数より古いファイルを削除する (デフォルト: 7日)
+#     """
+#     # クリーンアップ対象のディレクトリ
+#     directories_to_clean = [
+#         os.path.join(app_root_path, 'temp_downloads'),
+#         os.path.join(app_root_path, 'temp_zips'),
+#         os.path.join(app_root_path, 'temp_uploads')
+#     ]
+    
+#     total_files_deleted = 0
+    
+#     for temp_dir in directories_to_clean:
+#         if not os.path.exists(temp_dir):
+#             logger.info(f"ディレクトリが存在しません: {temp_dir}")
+#             continue
+            
+#         logger.info(f"一時ディレクトリのクリーンアップを実行中: {temp_dir}")
+#         files_deleted = 0
+        
+#         for filename in os.listdir(temp_dir):
+#             file_path = os.path.join(temp_dir, filename)
+#             try:
+#                 if os.path.isfile(file_path):
+#                     # ファイルの最終更新時間を確認
+#                     file_mod_time = os.path.getmtime(file_path)
+#                     # days_old日以上前のファイルを削除
+#                     if time.time() - file_mod_time > days_old * 24 * 60 * 60:                    
+#                         os.remove(file_path)
+#                         files_deleted += 1
+#                         logger.debug(f"古い一時ファイルを削除: {filename} (最終更新: {time.ctime(file_mod_time)})")
+#                 elif os.path.isdir(file_path):
+#                     # サブディレクトリの場合はディレクトリ自体の最終更新時間をチェック
+#                     dir_mod_time = os.path.getmtime(file_path)
+#                     if time.time() - dir_mod_time > days_old * 24 * 60 * 60:
+#                         shutil.rmtree(file_path)
+#                         files_deleted += 1
+#                         logger.debug(f"古い一時ディレクトリを削除: {filename} (最終更新: {time.ctime(dir_mod_time)})")
+#             except Exception as e:
+#                 logger.error(f"一時ファイル削除エラー ({file_path}): {e}")
+        
+#         total_files_deleted += files_deleted
+#         logger.info(f"ディレクトリ {temp_dir} のクリーンアップ完了: {files_deleted}ファイルを削除しました")
+    
+#     return total_files_deleted
+
+def cleanup_temp_files(app_root_path, days_old=7, include_system_temp=False):
     """
-    # クリーンアップ対象のディレクトリ
+    アプリ内の一時ディレクトリおよび（任意で）OS標準一時ディレクトリをクリーンアップする
+    """
+    import tempfile
+
     directories_to_clean = [
         os.path.join(app_root_path, 'temp_downloads'),
-        os.path.join(app_root_path, 'temp_zips')
+        os.path.join(app_root_path, 'temp_zips'),
+        os.path.join(app_root_path, 'temp_uploads'),  # 追加対象
     ]
     
     total_files_deleted = 0
-    
+
     for temp_dir in directories_to_clean:
-        if not os.path.exists(temp_dir):
-            logger.info(f"ディレクトリが存在しません: {temp_dir}")
-            continue
-            
-        logger.info(f"一時ディレクトリのクリーンアップを実行中: {temp_dir}")
-        files_deleted = 0
-        
-        for filename in os.listdir(temp_dir):
-            file_path = os.path.join(temp_dir, filename)
-            try:
-                if os.path.isfile(file_path):
-                    # ファイルの最終更新時間を確認
-                    file_mod_time = os.path.getmtime(file_path)
-                    # days_old日以上前のファイルを削除
-                    if time.time() - file_mod_time > days_old * 24 * 60 * 60:                    
-                        os.remove(file_path)
-                        files_deleted += 1
-                        logger.debug(f"古い一時ファイルを削除: {filename} (最終更新: {time.ctime(file_mod_time)})")
-                elif os.path.isdir(file_path):
-                    # サブディレクトリの場合はディレクトリ自体の最終更新時間をチェック
-                    dir_mod_time = os.path.getmtime(file_path)
-                    if time.time() - dir_mod_time > days_old * 24 * 60 * 60:
-                        shutil.rmtree(file_path)
-                        files_deleted += 1
-                        logger.debug(f"古い一時ディレクトリを削除: {filename} (最終更新: {time.ctime(dir_mod_time)})")
-            except Exception as e:
-                logger.error(f"一時ファイル削除エラー ({file_path}): {e}")
-        
-        total_files_deleted += files_deleted
-        logger.info(f"ディレクトリ {temp_dir} のクリーンアップ完了: {files_deleted}ファイルを削除しました")
-    
+        total_files_deleted += _cleanup_dir(temp_dir, days_old)
+
+    if include_system_temp:
+        system_temp_dir = tempfile.gettempdir()
+        total_files_deleted += _cleanup_dir(system_temp_dir, days_old, filter_exts={'.stl', '.glb', '.zip'})
+
     return total_files_deleted
+
+
+def _cleanup_dir(temp_dir, days_old, filter_exts=None):
+    files_deleted = 0
+    if not os.path.exists(temp_dir):
+        logger.info(f"ディレクトリが存在しません: {temp_dir}")
+        return 0
+
+    logger.info(f"クリーンアップ中: {temp_dir}")
+
+    for filename in os.listdir(temp_dir):
+        file_path = os.path.join(temp_dir, filename)
+        try:
+            if os.path.isfile(file_path):
+                if filter_exts and not any(filename.endswith(ext) for ext in filter_exts):
+                    continue
+                if time.time() - os.path.getmtime(file_path) > days_old * 86400:
+                    os.remove(file_path)
+                    files_deleted += 1
+            elif os.path.isdir(file_path):
+                if time.time() - os.path.getmtime(file_path) > days_old * 86400:
+                    shutil.rmtree(file_path)
+                    files_deleted += 1
+        except Exception as e:
+            logger.error(f"削除失敗: {file_path} ({e})")
+
+    logger.info(f"{temp_dir} 内の削除数: {files_deleted}")
+    return files_deleted
 
 def setup_scheduled_cleanup(app):
     """
