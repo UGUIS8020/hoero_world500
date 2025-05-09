@@ -74,11 +74,15 @@
             <ul class="navbar-nav ms-auto">
 
               <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'main.blog_maintenance' %}active{% endif %}" href="{{ url_for('main.colors') }}">色分析</a>
+                <a class="nav-link {% if request.endpoint == 'main.colors' %}active{% endif %}" href="{{ url_for('main.colors') }}">色分析</a>
               </li>
 
               <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'main.blog_maintenance' %}active{% endif %}" href="{{ url_for('pages.combination_checker') }}">checker</a>
+                <a class="nav-link {% if request.endpoint == 'pages.combination_checker' %}active{% endif %}" href="{{ url_for('pages.combination_checker') }}">checker</a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'stl_board.index' %}active{% endif %}" href="{{ url_for('stl_board.index') }}">STL</a>
               </li>
               
               {% if current_user.is_authenticated and current_user.is_administrator %}

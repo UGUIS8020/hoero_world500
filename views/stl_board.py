@@ -29,7 +29,6 @@ s3 = boto3.client(
 
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 
-
 # STL掲示板用のブループリント
 bp = Blueprint('stl_board', __name__, url_prefix='/stl_board')
 
