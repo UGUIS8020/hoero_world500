@@ -43,6 +43,57 @@ def get_next_sequence_number():
         print(warning_msg)
         return fallback_id, warning_msg  # ← 2つ返す
     
+# class ZipHandler:
+#     def __init__(self, upload_folder='uploads', temp_zip_folder='temp_zips'):
+#         self.UPLOAD_FOLDER = upload_folder
+#         self.TEMP_ZIP_FOLDER = temp_zip_folder
+        
+#         # ディレクトリの作成
+#         os.makedirs(self.UPLOAD_FOLDER, exist_ok=True)
+#         os.makedirs(self.TEMP_ZIP_FOLDER, exist_ok=True)   
+
+#     def process_files(self, files):
+#         """ファイルを処理してZIPファイルを作成"""
+#         if not files:
+#             raise ValueError('ファイルが選択されていません')
+
+#         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+#         temp_dir = os.path.join(self.TEMP_ZIP_FOLDER, timestamp)
+#         os.makedirs(temp_dir, exist_ok=True)
+
+#         try:
+#             if len(files) <= 10:
+#                 print("Saving files without compression")
+#                 saved_files = []
+#                 for file in files:
+#                     filename = secure_filename(file.filename)
+#                     save_path = os.path.join(temp_dir, filename)
+#                     file.save(save_path)
+#                     saved_files.append(save_path)
+#                 # 一時ディレクトリは削除せず、呼び出し元で削除する
+#                 return saved_files, temp_dir
+#             else:
+#                 print("Creating compressed zip")
+#                 zip_path = os.path.join(self.TEMP_ZIP_FOLDER, f'compressed_{timestamp}.zip')
+#                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+#                     for file in files:
+#                         print(f"Processing file: {file.filename}")
+#                         filename = secure_filename(file.filename)
+#                         temp_path = os.path.join(temp_dir, filename)
+#                         file.save(temp_path)
+#                         zipf.write(temp_path, filename)
+                
+#                 # ZIPファイル作成後、一時ディレクトリを削除
+#                 if os.path.exists(temp_dir):
+#                     shutil.rmtree(temp_dir, ignore_errors=True)
+                
+#                 return zip_path, None
+#         except Exception as e:
+#             # エラー発生時は一時ディレクトリを削除
+#             if os.path.exists(temp_dir):
+#                 shutil.rmtree(temp_dir, ignore_errors=True)
+#             raise e
+        
 class ZipHandler:
     def __init__(self, upload_folder='uploads', temp_zip_folder='temp_zips'):
         self.UPLOAD_FOLDER = upload_folder
@@ -52,8 +103,8 @@ class ZipHandler:
         os.makedirs(self.UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(self.TEMP_ZIP_FOLDER, exist_ok=True)   
 
-    def process_files(self, files):
-        """ファイルを処理してZIPファイルを作成"""
+    def process_files(self, files, has_folder_structure=False):
+        """ファイルを処理（常にZIPファイルを作成）"""
         if not files:
             raise ValueError('ファイルが選択されていません')
 
@@ -62,42 +113,37 @@ class ZipHandler:
         os.makedirs(temp_dir, exist_ok=True)
 
         try:
-            if len(files) <= 10:
-                print("Saving files without compression")
-                saved_files = []
+            print(f"Creating ZIP file {'(folder structure)' if has_folder_structure else '(all files)'}")
+            zip_path = os.path.join(self.TEMP_ZIP_FOLDER, f'compressed_{timestamp}.zip')
+            
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for file in files:
+                    print(f"Processing file: {file.filename}")
                     filename = secure_filename(file.filename)
-                    save_path = os.path.join(temp_dir, filename)
-                    file.save(save_path)
-                    saved_files.append(save_path)
-                # 一時ディレクトリは削除せず、呼び出し元で削除する
-                return saved_files, temp_dir
-            else:
-                print("Creating compressed zip")
-                zip_path = os.path.join(self.TEMP_ZIP_FOLDER, f'compressed_{timestamp}.zip')
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for file in files:
-                        print(f"Processing file: {file.filename}")
-                        filename = secure_filename(file.filename)
-                        temp_path = os.path.join(temp_dir, filename)
-                        file.save(temp_path)
-                        zipf.write(temp_path, filename)
+                    
+                    # フォルダ構造がある場合はパスを保持
+                    if has_folder_structure and hasattr(file, 'webkitRelativePath') and file.webkitRelativePath:
+                        arc_name = file.webkitRelativePath
+                    elif has_folder_structure and hasattr(file, 'relativePath') and file.relativePath:
+                        arc_name = file.relativePath
+                    else:
+                        # 構造がない場合は単にファイル名を使用
+                        arc_name = filename
+                        
+                    temp_path = os.path.join(temp_dir, filename)
+                    file.save(temp_path)
+                    zipf.write(temp_path, arcname=arc_name)
+            
+            # 一時ディレクトリを削除
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            
+            return zip_path, None
                 
-                # ZIPファイル作成後、一時ディレクトリを削除
-                if os.path.exists(temp_dir):
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                
-                return zip_path, None
         except Exception as e:
-            # エラー発生時は一時ディレクトリを削除
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir, ignore_errors=True)
             raise e
-        
-# アップロードされたファイルの一時保存先
-# UPLOAD_FOLDER = 'uploads'
-# if not os.path.exists(UPLOAD_FOLDER):
-#     os.makedirs(UPLOAD_FOLDER)
 
 def get_main_color_list_img(img_path):
     """

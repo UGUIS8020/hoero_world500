@@ -436,23 +436,29 @@ def meziro_upload():
 
     uploaded_urls = []
     numbered_ids = []
-    
+
+    # フォルダ構造の情報を取得
+    has_folder = request.form.get('has_folder_structure', 'false').lower() == 'true'
+    print(f"フォルダ構造の有無: {has_folder}")  # デバッグ用
+
     session_id, warning_message = get_next_sequence_number()
     id_str = f"{session_id:05d}"  # 管理番号として6桁のゼロ埋め形式に   
-    
+
     try:
-        result, temp_dir = zip_handler_instance.process_files(files)
+        # 修正: has_folderパラメータを追加
+        result, temp_dir = zip_handler_instance.process_files(files, has_folder)
         print(f"process_files result: {result}, type: {type(result)}")  # デバッグ用
         print(f"Number of files: {len(files)}")  # デバッグ用
 
-        if isinstance(result, list):  # 圧縮していない場合
+        if isinstance(result, list):  # フォルダ内のファイル
+            folder_prefix = f"meziro/{id_str}/"  # 管理番号をフォルダ名として使用
+            
             for index, file_path in enumerate(result, start=1):
                 original_filename = os.path.basename(file_path)
                 safe_filename = sanitize_filename(original_filename)
                 
-                # 管理番号とファイル番号を組み合わせた名前
-                numbered_filename = f"{id_str}_{index:03d}_{safe_filename}"
-                s3_key = f"meziro/{numbered_filename}"
+                # 管理番号のフォルダ内にファイルを配置（フォルダ構造を使用）
+                s3_key = f"{folder_prefix}{index:03d}_{safe_filename}"
                 s3_key = get_unique_filename(os.getenv("BUCKET_NAME"), s3_key)
 
                 with open(file_path, 'rb') as f:

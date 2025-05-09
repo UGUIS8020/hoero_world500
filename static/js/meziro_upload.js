@@ -372,6 +372,11 @@ async function uploadFiles(files) {
     // パス情報をJSONとして追加
     formData.append("paths", JSON.stringify(paths));
 
+    // フォルダ構造の有無を判定
+    const hasFolder = Object.values(paths).some((path) => path.includes("/"));
+    formData.append("has_folder_structure", hasFolder.toString());
+    console.log("フォルダ構造の有無:", hasFolder); // デバッグ用    
+
     progressContainer.style.display = "block";
     showStatus("ファイルをアップロード中...", "processing");
     uploadButton.disabled = true;
@@ -542,7 +547,11 @@ function readDirectory(directoryEntry) {
 function getFileFromEntry(fileEntry) {
     return new Promise((resolve) => {
         fileEntry.file(
-            (file) => resolve(file),
+            (file) => {
+                // ここが重要: ファイルオブジェクトにパス情報を追加
+                file.relativePath = fileEntry.fullPath.substring(1); // 先頭の '/' を除去
+                resolve(file);
+            },
             (error) => {
                 console.error("ファイルの取得エラー:", error);
                 resolve(null);

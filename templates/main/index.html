@@ -1,40 +1,7 @@
 {% extends "common/base.html" %}
 {% block content %}     
 
-    <style>
-    h1 {
-        text-align:center; 
-        color: #222222;
-        margin: 25px 0px 0px 0px;
-        padding: 0px;
-        }
-
-        h2 {
-        /* background-color:green; */
-        text-align:center; 
-        color: #222222;
-        margin: 0px 0px 0px 0px;
-        padding: 5px 0px 0px 0px;
-        }
-
-        h3 {
-        /* background-color:red; */
-        text-align:center; 
-        color: #222222;
-        margin: 0px 0px 0px 0px;
-        padding: 5px 0px 0px 0px;
-        /* margin: 5px 0px 0px 0px; */
-        /* padding: 5px 0px 0px 0px; */
-        }
-
-        h4 {
-        text-align:center; 
-        color: #333333;
-        font-weight: normal;
-        font-size: 18px;
-        margin: 5px;
-        padding: 5px;
-        }
+    <style>   
     .dental-header {
         display: flex;
         background-color: rgb(243, 244, 245);
@@ -107,7 +74,7 @@
         background-color: #e8f4ff;
     }
     .file-list {
-        margin-top: 20px;
+        margin-top: 10px;
         max-width: 800px;
         margin-left: auto;
         margin-right: auto;
@@ -244,6 +211,7 @@
         }
 
 </style>
+
 <style>
   .file-summary {
     padding: 10px;
@@ -261,7 +229,7 @@
   }
 </style>
 
-<h3>〒343-0845 埼玉県越谷市南越谷4-9-6 新越谷プラザビル203</h3>
+<h2>〒343-0845 埼玉県越谷市南越谷4-9-6 新越谷プラザビル203</h2>
 <h2><a href = "tel:0489618151">Tel 048-961-8151</a></h2>
 <h3>E-mail shibuya8020@gmail.com</h3>
 
@@ -330,18 +298,19 @@
 
 <div id="fileList" class="file-list"></div> -->
 
-    <div class="box box1">        
-        <a href="{{ url_for('pages.root_replica') }}" target="_self">
-            <h2>rootreplica</h2>
-            <h3>自家歯牙移植用3Dドナーレプリカ(歯根レプリカ)</h3>
-            <h3>自家歯牙移植用サージカルガイド</h3>          
+    <h2>自家歯牙移植用3Dドナーレプリカ(歯根レプリカ)</h2>
+    <div id="fileList" class="file-list"></div>
 
-           <div>      
-          <img src="{{ url_for('static', filename='main/top/root_replica003.jpg') }}">
-          <img src="{{ url_for('static', filename='main/top/root_replica004.jpg') }}">
-          </div>
-          </a>
-    </div>
+        <div class="box box1">        
+            <a href="{{ url_for('pages.root_replica') }}" target="_self">
+                <h2>rootreplica</h2>                   
+
+            <div>      
+            <img src="{{ url_for('static', filename='main/top/root_replica003.jpg') }}">
+            <img src="{{ url_for('static', filename='main/top/root_replica004.jpg') }}">
+            </div>
+            </a>
+        </div>
 
     <h3>ChatBot:弊社,歯科に関する質問に応答するチャットボットです</h3>
     <!-- 埋め込み用のセクション -->
