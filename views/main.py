@@ -20,8 +20,9 @@ from utils.stl_reducer import reduce_stl_size
 import tempfile
 from werkzeug.utils import secure_filename
 import json
+from pytz import timezone
 
-JST = timezone(timedelta(hours=9))
+JST = timezone('Asia/Tokyo')
 current_time = datetime.now(JST)
 
 bp = Blueprint('main', __name__, template_folder='hoero_world/templates', static_folder='hoero_world/static')
@@ -708,19 +709,88 @@ def category_posts(blog_category_id):
 
     return render_template('main/index.html', blog_posts=blog_posts, recent_blog_posts=recent_blog_posts, blog_categories=blog_categories, blog_category=blog_category, form=form)
 
+# @bp.route('/inquiry', methods=['GET', 'POST'])
+# def inquiry():
+#     form = InquiryForm()
+#     if form.validate_on_submit():
+#         inquiry = Inquiry(name=form.name.data,
+#                             email=form.email.data,
+#                             title=form.title.data,
+#                             text=form.text.data)
+#         db.session.add(inquiry)
+#         db.session.commit()
+#         flash('お問い合わせが送信されました')
+#         return redirect(url_for('main.inquiry'))
+#     return render_template('main/inquiry.html', form=form)
+
 @bp.route('/inquiry', methods=['GET', 'POST'])
 def inquiry():
     form = InquiryForm()
+    inquiry_id = request.args.get("id")
+
     if form.validate_on_submit():
-        inquiry = Inquiry(name=form.name.data,
-                            email=form.email.data,
-                            title=form.title.data,
-                            text=form.text.data)
+        # DB保存
+        inquiry = Inquiry(
+            name=form.name.data,
+            email=form.email.data,
+            title=form.title.data,
+            text=form.text.data
+        )
         db.session.add(inquiry)
         db.session.commit()
-        flash('お問い合わせが送信されました')
+
+        # メール送信（管理者 + 自動返信）
+        try:
+            # 管理者への通知
+            msg = Message(
+                subject=f"【お問い合わせ】{inquiry.title}",
+                sender=os.getenv("MAIL_INQUIRY_SENDER"),
+                recipients=[os.getenv("MAIL_NOTIFICATION_RECIPIENT")]
+            )
+            msg.body = f"""以下の内容でお問い合わせがありました：
+
+■名前: {inquiry.name}
+■メール: {inquiry.email}
+■件名: {inquiry.title}
+■内容:
+{inquiry.text}
+
+■日時: {datetime.now(timezone('Asia/Tokyo')).strftime('%Y-%m-%d %H:%M')}
+"""
+            mail.send(msg)
+
+            # 🔹 自動返信メール（ユーザー向け）
+            auto_reply = Message(
+                subject="【渋谷歯科技工所】お問い合わせありがとうございました",
+                sender=os.getenv("MAIL_INQUIRY_SENDER"),
+                recipients=[inquiry.email]
+            )
+            auto_reply.body = f"""{inquiry.name} 様
+
+このたびはお問い合わせいただきありがとうございます。
+以下の内容で受け付けました。
+
+件名: {inquiry.title}
+内容:
+{inquiry.text}
+
+担当者より折り返しご連絡いたします。
+今しばらくお待ちください。
+
+------------------------------------------------------------
+渋谷歯科技工所
+------------------------------------------------------------
+"""
+            mail.send(auto_reply)
+
+        except Exception as e:
+            flash("メール送信中にエラーが発生しました。", "danger")
+            print(f"メール送信エラー: {e}")
+
+        flash("お問い合わせを受け付けました。", "success")
         return redirect(url_for('main.inquiry'))
-    return render_template('main/inquiry.html', form=form)
+
+    return render_template("main/inquiry.html", form=form, inquiry_id=inquiry_id)
 
 @bp.route('/inquiry_maintenance')
 @login_required

@@ -37,7 +37,7 @@ class STLPostForm(FlaskForm):
     title = StringField('タイトル', validators=[DataRequired(), Length(max=100)])
     content = TextAreaField('内容')
     stl_file = FileField('STLファイル', validators=[
-        FileAllowed(['stl'], 'STLファイルのみ許可されています')
+        FileAllowed(['stl'], 'STLファイルのみ許可されています')    
     ])
     submit = SubmitField('投稿する')
 
@@ -66,26 +66,6 @@ def reduce_stl_size(input_file_path, output_file_path, target_faces=50000):
         'original_faces': current_faces,
         'new_faces': ms.current_mesh().face_number()
     }
-
-# def convert_stl_to_gltf(input_stl_path, output_gltf_path):
-#     try:
-#         mesh = trimesh.load_mesh(input_stl_path)
-        
-#         # シーンを作成して、そこにメッシュを追加
-#         scene = trimesh.Scene()
-#         scene.add_geometry(mesh)
-        
-#         # シーンからGLBデータを作成
-#         glb_data = scene.export(file_type='glb')
-        
-#         # ファイルに保存
-#         with open(output_gltf_path, 'wb') as f:
-#             f.write(glb_data)
-
-#         return True
-#     except Exception as e:
-#         print(f"変換エラー: {e}")
-#         return False
 
 def convert_stl_to_gltf(input_stl_path, output_gltf_path):
     try:
